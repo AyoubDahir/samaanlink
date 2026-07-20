@@ -1,0 +1,49 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: foodyexpress-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: fdb
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: ./FoodyExpress
+    container_name: foodyexpress-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/fdb?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+    ports:
+      - "8088:8088"
+
+  frontend:
+    build:
+      context: ../prime-frontend
+      args:
+        API_PROXY_TARGET: http://app:8088
+    container_name: samaanlink-frontend
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      API_PROXY_TARGET: http://app:8088
+    ports:
+      - "3000:3000"
+
+volumes:
+  mysql_data:

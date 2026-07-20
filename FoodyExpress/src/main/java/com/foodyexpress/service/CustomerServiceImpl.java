@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.foodyexpress.exception.CustomerException;
 import com.foodyexpress.exception.LoginException;
@@ -28,6 +29,7 @@ public class CustomerServiceImpl implements CustomerService {
 	private CurrentUserSessionRepo currSession;
 
 	@Override
+	@Transactional
 	public Customer addCustomer(Customer customer) throws CustomerException {
 
 		Customer existsCustomer = customerRepo.findByEmail(customer.getEmail());

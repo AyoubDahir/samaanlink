@@ -1,9 +1,13 @@
 package com.foodyexpress.exception;
 
 import java.time.LocalDateTime;
+import java.util.stream.Collectors;
+
+import javax.validation.ConstraintViolationException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -12,7 +16,25 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
-	
+
+	@ExceptionHandler(TransactionSystemException.class)
+	public ResponseEntity<MyErrorDetails> transactionSystemExceptionHandler(TransactionSystemException ex,
+			WebRequest re) {
+		MyErrorDetails err = new MyErrorDetails();
+		err.setTimestamp(LocalDateTime.now());
+
+		Throwable cause = ex.getMostSpecificCause();
+		if (cause instanceof ConstraintViolationException) {
+			String message = ((ConstraintViolationException) cause).getConstraintViolations().stream()
+					.map(v -> v.getPropertyPath() + ": " + v.getMessage()).collect(Collectors.joining("; "));
+			err.setMessage(message);
+		} else {
+			err.setMessage(cause != null ? cause.getMessage() : ex.getMessage());
+		}
+		err.setDescription(re.getDescription(false));
+		return new ResponseEntity<MyErrorDetails>(err, HttpStatus.BAD_REQUEST);
+	}
+
 	@ExceptionHandler(LoginException.class)
 	public ResponseEntity<MyErrorDetails> loginExceptionHandler(LoginException me, WebRequest re) {
 		MyErrorDetails err = new MyErrorDetails();

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.foodyexpress.exception.LoginException;
 import com.foodyexpress.model.LoginDTO;
+import com.foodyexpress.model.LoginResponseDTO;
 import com.foodyexpress.service.LoginService;
 
 @RestController
@@ -21,9 +22,9 @@ public class LoginLogoutController {
 	private LoginService loginService;
 
 	@PostMapping("/login")
-	public ResponseEntity<String> logIn(@RequestBody LoginDTO loginDTO) throws LoginException {
-		String result = loginService.loginAccount(loginDTO);
-		return new ResponseEntity<String>(result, HttpStatus.OK);
+	public ResponseEntity<LoginResponseDTO> logIn(@RequestBody LoginDTO loginDTO) throws LoginException {
+		LoginResponseDTO result = loginService.loginAccount(loginDTO);
+		return new ResponseEntity<LoginResponseDTO>(result, HttpStatus.OK);
 	}
 
 	@PostMapping("/logout")

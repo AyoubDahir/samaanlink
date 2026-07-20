@@ -12,6 +12,7 @@ import com.foodyexpress.model.CurrentUserSession;
 import com.foodyexpress.model.Customer;
 import com.foodyexpress.model.Login;
 import com.foodyexpress.model.LoginDTO;
+import com.foodyexpress.model.LoginResponseDTO;
 import com.foodyexpress.repository.CustomerRepo;
 import com.foodyexpress.repository.AdminRepo;
 import com.foodyexpress.repository.CurrentUserSessionRepo;
@@ -31,7 +32,7 @@ public class LoginServiceImpl implements LoginService {
 	private CurrentUserSessionRepo sessionRepo;
 
 	@Override
-	public String loginAccount(LoginDTO loginDTO) throws LoginException {
+	public LoginResponseDTO loginAccount(LoginDTO loginDTO) throws LoginException {
 
 		if (loginDTO.getRole().equalsIgnoreCase("customer")) {
 
@@ -44,7 +45,8 @@ public class LoginServiceImpl implements LoginService {
 				CurrentUserSession cuurSession = sessionRepo.findByEmail(loginDTO.getEmail());
 
 				if (cuurSession != null)
-					throw new LoginException("User already logged-In!");
+					return new LoginResponseDTO("Login Sucessufull!", cuurSession.getPrivateKey(), "customer",
+							customer.getCustomerId());
 
 				CurrentUserSession currentUserSession = new CurrentUserSession();
 				currentUserSession.setEmail(loginDTO.getEmail());
@@ -54,7 +56,7 @@ public class LoginServiceImpl implements LoginService {
 				currentUserSession.setPrivateKey(privateKey);
 
 				sessionRepo.save(currentUserSession);
-				return "Login Sucessufull!";
+				return new LoginResponseDTO("Login Sucessufull!", privateKey, "customer", customer.getCustomerId());
 			} else {
 				throw new LoginException("Please Enter a valid password");
 			}
@@ -69,7 +71,7 @@ public class LoginServiceImpl implements LoginService {
 				CurrentUserSession cuurSession = sessionRepo.findByEmail(loginDTO.getEmail());
 
 				if (cuurSession != null)
-					throw new LoginException("User already logged-In!");
+					return new LoginResponseDTO("Login Sucessufull!", cuurSession.getPrivateKey(), "admin", null);
 
 				CurrentUserSession currentUserSession = new CurrentUserSession();
 				currentUserSession.setEmail(loginDTO.getEmail());
@@ -79,12 +81,12 @@ public class LoginServiceImpl implements LoginService {
 				currentUserSession.setPrivateKey(privateKey);
 
 				sessionRepo.save(currentUserSession);
-				return "Login Sucessufull!";
+				return new LoginResponseDTO("Login Sucessufull!", privateKey, "admin", null);
 			} else {
 				throw new LoginException("Please Enter a valid password");
 			}
 		}
-		return null;
+		throw new LoginException("Invalid role");
 	}
 
 	@Override
