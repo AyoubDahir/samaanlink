@@ -17,7 +17,7 @@ import com.foodyexpress.repository.CustomerRepo;
 import com.foodyexpress.repository.AdminRepo;
 import com.foodyexpress.repository.CurrentUserSessionRepo;
 
-import net.bytebuddy.utility.RandomString;
+import java.security.SecureRandom;
 
 @Service
 public class LoginServiceImpl implements LoginService {
@@ -30,6 +30,17 @@ public class LoginServiceImpl implements LoginService {
 
 	@Autowired
 	private CurrentUserSessionRepo sessionRepo;
+
+	private static final String KEY_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+	private static final SecureRandom RANDOM = new SecureRandom();
+
+	private static String randomKey(int length) {
+		StringBuilder sb = new StringBuilder(length);
+		for (int i = 0; i < length; i++) {
+			sb.append(KEY_ALPHABET.charAt(RANDOM.nextInt(KEY_ALPHABET.length())));
+		}
+		return sb.toString();
+	}
 
 	@Override
 	public LoginResponseDTO loginAccount(LoginDTO loginDTO) throws LoginException {
@@ -52,7 +63,7 @@ public class LoginServiceImpl implements LoginService {
 				currentUserSession.setEmail(loginDTO.getEmail());
 				currentUserSession.setLoginDateTime(LocalDateTime.now());
 				currentUserSession.setRole("customer");
-				String privateKey = RandomString.make(6);
+				String privateKey = randomKey(6);
 				currentUserSession.setPrivateKey(privateKey);
 
 				sessionRepo.save(currentUserSession);
@@ -77,7 +88,7 @@ public class LoginServiceImpl implements LoginService {
 				currentUserSession.setEmail(loginDTO.getEmail());
 				currentUserSession.setLoginDateTime(LocalDateTime.now());
 				currentUserSession.setRole("admin");
-				String privateKey = RandomString.make(6);
+				String privateKey = randomKey(6);
 				currentUserSession.setPrivateKey(privateKey);
 
 				sessionRepo.save(currentUserSession);

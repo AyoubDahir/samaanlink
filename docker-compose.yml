@@ -1,17 +1,18 @@
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: foodyexpress-mysql
+  postgres:
+    image: postgres:17
+    container_name: samaanlink-postgres
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: fdb
-      MYSQL_ROOT_PASSWORD: root
+      POSTGRES_DB: samaanlink
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d samaanlink"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -22,12 +23,12 @@ services:
     container_name: foodyexpress-app
     restart: unless-stopped
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/fdb?allowPublicKeyRetrieval=true&useSSL=false
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/samaanlink
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
     ports:
       - "8088:8088"
 
@@ -46,4 +47,4 @@ services:
       - "3000:3000"
 
 volumes:
-  mysql_data:
+  postgres_data:
