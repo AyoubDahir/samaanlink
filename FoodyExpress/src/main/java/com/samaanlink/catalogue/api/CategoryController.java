@@ -1,7 +1,10 @@
 package com.samaanlink.catalogue.api;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,5 +34,10 @@ public class CategoryController {
 		CategorySummary category = catalogueFacade
 				.createCategory(new CreateCategoryCommand(request.name(), request.parentCategoryId()));
 		return ResponseEntity.status(HttpStatus.CREATED).body(category);
+	}
+
+	@GetMapping
+	public ResponseEntity<List<CategorySummary>> list() {
+		return ResponseEntity.ok(catalogueFacade.listCategories());
 	}
 }

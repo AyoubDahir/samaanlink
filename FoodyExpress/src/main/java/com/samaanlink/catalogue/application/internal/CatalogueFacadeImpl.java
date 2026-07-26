@@ -49,6 +49,12 @@ public class CatalogueFacadeImpl implements CatalogueFacade {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
+	public List<CategorySummary> listCategories() {
+		return categoryRepository.findAll().stream().map(this::toSummary).toList();
+	}
+
+	@Override
 	@Transactional
 	public ProductSummary createProduct(CreateProductCommand command) {
 		if (productRepository.existsBySku(command.sku())) {

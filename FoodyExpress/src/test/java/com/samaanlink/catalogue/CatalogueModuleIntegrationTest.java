@@ -35,6 +35,8 @@ class CatalogueModuleIntegrationTest extends AbstractIntegrationTest {
 
 		catalogueFacade.activateProduct(product.id());
 		assertThat(catalogueFacade.findProduct(product.id()).status()).isEqualTo("ACTIVE");
+
+		assertThat(catalogueFacade.listCategories()).extracting(CategorySummary::id).contains(category.id());
 	}
 
 	@Test

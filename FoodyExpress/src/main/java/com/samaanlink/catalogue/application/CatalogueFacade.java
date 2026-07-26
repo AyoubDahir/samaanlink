@@ -12,6 +12,8 @@ public interface CatalogueFacade {
 
 	CategorySummary createCategory(CreateCategoryCommand command);
 
+	List<CategorySummary> listCategories();
+
 	ProductSummary createProduct(CreateProductCommand command);
 
 	void activateProduct(UUID productId);
