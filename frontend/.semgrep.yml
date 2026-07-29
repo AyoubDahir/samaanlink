@@ -1,0 +1,68 @@
+rules:
+  - id: bulsho.no-hardcoded-secret-fallback
+    languages:
+      - javascript
+      - typescript
+    message: Do not provide hardcoded fallback values for secrets (env var must be set).
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          - pattern: process.env.$VAR || '$FALLBACK'
+          - pattern: process.env.$VAR || "$FALLBACK"
+          - pattern: process.env.$VAR ?? '$FALLBACK'
+          - pattern: process.env.$VAR ?? "$FALLBACK"
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: .*(SECRET|TOKEN|PASSWORD|API_KEY|PRIVATE|CLIENT_SECRET|ACCESS_KEY|SECRET_KEY).*
+      - metavariable-regex:
+          metavariable: $FALLBACK
+          regex: ^.+$
+
+  - id: bulsho.no-client-side-secret-env
+    languages:
+      - javascript
+      - typescript
+    message: Do not access non-public secret env vars in client components. Keep secrets server-side (BFF) only.
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              'use client'
+              ...
+          - pattern-inside: |
+              "use client"
+              ...
+      - pattern: process.env.$VAR
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: ^(?!NEXT_PUBLIC_).*(SECRET|TOKEN|PASSWORD|API_KEY|PRIVATE|CLIENT_SECRET|ACCESS_KEY|SECRET_KEY).*
+
+  - id: bulsho.no-next-public-secrets
+    languages:
+      - javascript
+      - typescript
+    message: Do not use NEXT_PUBLIC env vars for secrets; they are exposed to the browser bundle.
+    severity: ERROR
+    patterns:
+      - pattern: process.env.$VAR
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: ^NEXT_PUBLIC_.*(SECRET|TOKEN|PASSWORD|PRIVATE|CLIENT_SECRET).*
+
+  - id: bulsho.no-hardcoded-secret-string
+    languages:
+      - javascript
+      - typescript
+    message: Possible hardcoded secret/credential. Store secrets in server-side env vars.
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          - pattern: const $NAME = '$VAL'
+          - pattern: const $NAME = "$VAL"
+          - pattern: let $NAME = '$VAL'
+          - pattern: let $NAME = "$VAL"
+          - pattern: var $NAME = '$VAL'
+          - pattern: var $NAME = "$VAL"
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: .*(SECRET|TOKEN|PASSWORD|API_KEY|PRIVATE|CLIENT_SECRET|ACCESS_KEY|SECRET_KEY).*

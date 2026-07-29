@@ -1,0 +1,7 @@
+# The full stack (MySQL + FoodyExpress backend + this frontend) is defined in
+# ../samaanlink/docker-compose.yml. Run everything together from there:
+#   cd ../samaanlink && docker compose up -d --build
+#
+# This file is intentionally left without services — kept only so `docker-compose up`
+# run from this directory gives a clear pointer instead of silently doing nothing.
+name: samaanlink-frontend

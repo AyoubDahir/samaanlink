@@ -1,0 +1,16 @@
+# Semgrep ignore file
+
+# build / deps
+node_modules/
+.next/
+out/
+build/
+dist/
+coverage/
+
+# third-party / vendor assets
+public/core-sdk/
+
+# misc
+memory-bank/
+certificates/

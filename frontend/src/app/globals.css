@@ -1,0 +1,699 @@
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+@import './theme.css';
+
+/* Corporate Sidebar - all inner elements white on primary bg */
+.corporate-sidebar h3,
+.corporate-sidebar span,
+.corporate-sidebar a {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.corporate-sidebar svg {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.corporate-sidebar a:hover,
+.corporate-sidebar button:not(.text-red-600):hover {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.corporate-sidebar a:hover span,
+.corporate-sidebar a:hover svg,
+.corporate-sidebar button:hover span,
+.corporate-sidebar button:hover svg {
+  color: #fff !important;
+}
+
+.corporate-sidebar .border-b,
+.corporate-sidebar .border-t {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Active item */
+.corporate-sidebar a[class*='bg-primary'],
+.corporate-sidebar button[class*='bg-primary'] {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.corporate-sidebar a[class*='bg-primary'] span,
+.corporate-sidebar a[class*='bg-primary'] svg,
+.corporate-sidebar button[class*='bg-primary'] span,
+.corporate-sidebar button[class*='bg-primary'] svg {
+  color: #fff !important;
+}
+
+/* Child dot indicators */
+.corporate-sidebar .bg-gray-300 {
+  background-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.corporate-sidebar .bg-primary {
+  background-color: #fff !important;
+}
+
+/* Sign out stays red-ish */
+.corporate-sidebar .text-red-600 {
+  color: rgba(255, 160, 160, 0.9) !important;
+}
+
+.corporate-sidebar .text-red-600 svg {
+  color: rgba(255, 160, 160, 0.9) !important;
+}
+
+.corporate-sidebar .text-red-600:hover {
+  background-color: rgba(255, 100, 100, 0.15) !important;
+}
+
+/* Shimmer placeholders - white-tinted on corporate bg */
+.corporate-sidebar .bg-gray-200 {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.corporate-sidebar .dark\:bg-gray-700 {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Logo - no filter, use proper dark-mode asset instead */
+
+/* 3D Card Flip Effects */
+@layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .transform-style-preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+}
+
+:root {
+  --spacing: 0.25rem;
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: #29296e;
+  --maincolor: #29296e;
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: #12ade4;
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: #29296e;
+  --chart-2: #29296e;
+  --chart-3: #29296e;
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: #29296e;
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+
+  --form-control-bg: oklch(1 0 0);
+  --form-control-border: var(--input);
+  --select-option-hover-bg: var(--accent);
+  --select-option-selected-bg: var(--primary);
+  --select-option-selected-fg: var(--primary-foreground);
+}
+
+.dark {
+  --background: #1e2939;
+  --foreground: oklch(0.95 0 0);
+  --card: #243447;
+  --card-foreground: oklch(0.95 0 0);
+  --popover: #243447;
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: #29296e;
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: #12ade4;
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: #2a3f54;
+  --muted-foreground: oklch(0.7 0 0);
+  --accent: #2a3f54;
+  --accent-foreground: oklch(0.95 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(0.2 0 0);
+  --input: oklch(0.16 0 0);
+  --ring: oklch(0.4 0 0);
+  --chart-1: #29296e;
+  --chart-2: #29296e;
+  --chart-3: #29296e;
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: #1e2939;
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: #29296e;
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.14 0 0);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.18 0 0);
+  --sidebar-ring: oklch(0.4 0 0);
+
+  --form-control-bg: #111827;
+  --form-control-border: #374151;
+  --select-option-hover-bg: rgba(18, 173, 228, 0.12);
+  --select-option-selected-bg: var(--secondary);
+  --select-option-selected-fg: var(--secondary-foreground);
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  .font-delius {
+    font-family: var(--font-delius), cursive;
+  }
+}
+
+/* View Transition Wave Effect */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  /* Ensure the outgoing view (old theme) is beneath */
+  z-index: 0;
+}
+
+::view-transition-new(root) {
+  /* Ensure the incoming view (new theme) is always on top */
+  z-index: 1;
+}
+
+@keyframes reveal {
+  from {
+    /* Use CSS variables for the origin, defaulting to center if not set */
+    clip-path: circle(0% at var(--x, 50%) var(--y, 50%));
+    opacity: 0.7;
+  }
+
+  to {
+    /* Use CSS variables for the origin, defaulting to center if not set */
+    clip-path: circle(150% at var(--x, 50%) var(--y, 50%));
+    opacity: 1;
+  }
+}
+
+::view-transition-new(root) {
+  /* Apply the reveal animation */
+  animation: reveal 0.4s ease-in-out forwards;
+}
+
+/* React Phone Input Custom Styling */
+.react-tel-input .country-list {
+  @apply !mt-2 !max-h-[360px] !overflow-y-auto !rounded-xl !border !border-gray-200/80 !bg-white !p-1 !shadow-xl;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--primary) 18%, transparent)
+    transparent;
+}
+
+.dark .react-tel-input .country-list {
+  @apply !border-gray-700/70 !bg-gray-800;
+}
+
+.react-tel-input .country-list::-webkit-scrollbar {
+  @apply !w-2;
+}
+
+.react-tel-input .country-list::-webkit-scrollbar-track {
+  @apply !bg-transparent;
+}
+
+.react-tel-input .country-list::-webkit-scrollbar-thumb {
+  @apply !rounded-full !bg-gray-300;
+}
+
+.dark .react-tel-input .country-list::-webkit-scrollbar-thumb {
+  @apply !bg-gray-600;
+}
+
+.react-tel-input .country-list::-webkit-scrollbar-thumb:hover {
+  @apply !bg-gray-400;
+}
+
+.dark .react-tel-input .country-list::-webkit-scrollbar-thumb:hover {
+  @apply !bg-gray-500;
+}
+
+/* Search input in dropdown */
+.react-tel-input .search-box {
+  @apply !m-2 !w-[calc(100%-16px)] !rounded-lg !border !border-gray-200 !bg-gray-50 !px-3 !py-2.5 !text-sm !text-gray-900;
+  transition: all 0.2s ease;
+  background-image: none !important;
+}
+
+.react-tel-input .search-emoji,
+.react-tel-input .search-icon {
+  display: none !important;
+}
+
+.dark .react-tel-input .search-box {
+  @apply !border-gray-600/70 !bg-gray-700/60 !text-gray-100;
+}
+
+.react-tel-input .search-box:focus {
+  @apply !border-primary !bg-white !outline-none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+.dark .react-tel-input .search-box:focus {
+  @apply !bg-gray-600/60;
+}
+
+.react-tel-input .search-box::placeholder {
+  @apply !text-gray-400;
+}
+
+.dark .react-tel-input .search-box::placeholder {
+  @apply !text-gray-500;
+}
+
+/* Country items */
+.react-tel-input .country {
+  @apply !flex !items-center !gap-3 !rounded-lg !px-3 !py-2.5 !text-sm !text-gray-700;
+  transition: all 0.2s ease;
+}
+
+.dark .react-tel-input .country {
+  @apply !text-gray-200;
+}
+
+.react-tel-input .country:hover {
+  @apply !bg-primary/5;
+}
+
+.dark .react-tel-input .country:hover {
+  @apply !bg-primary/20;
+}
+
+.react-tel-input .country.highlight {
+  @apply !bg-primary/10;
+}
+
+.dark .react-tel-input .country.highlight {
+  @apply !bg-primary/30;
+}
+
+.react-tel-input .country .country-name {
+  @apply !font-medium !text-gray-900;
+}
+
+.dark .react-tel-input .country .country-name {
+  @apply !text-gray-100;
+}
+
+.react-tel-input .country .dial-code {
+  @apply !text-gray-600;
+}
+
+.dark .react-tel-input .country .dial-code {
+  @apply !text-gray-400;
+}
+
+/* Flag emoji styling */
+.react-tel-input .flag {
+  @apply !text-xl;
+}
+
+/* Selected country indicator */
+.react-tel-input .selected-flag {
+  @apply !bg-transparent;
+  transition: all 0.2s ease;
+}
+
+.react-tel-input .selected-flag:hover {
+  @apply !bg-gray-100;
+}
+
+.dark .react-tel-input .selected-flag:hover {
+  @apply !bg-gray-700;
+}
+
+.react-tel-input .selected-flag:focus {
+  @apply !outline-none;
+}
+
+/* Arrow icon */
+.react-tel-input .arrow {
+  @apply !border-t-gray-400;
+  transition: transform 0.2s ease;
+}
+
+.dark .react-tel-input .arrow {
+  @apply !border-t-gray-500;
+}
+
+.react-tel-input .selected-flag.open .arrow {
+  transform: rotate(180deg);
+}
+
+/* Divider */
+.react-tel-input .divider {
+  @apply !border-gray-200;
+}
+
+.dark .react-tel-input .divider {
+  @apply !border-gray-700;
+}
+
+/* No results message */
+.react-tel-input .no-entries-message {
+  @apply !py-4 !text-center !text-gray-500;
+}
+
+.dark .react-tel-input .no-entries-message {
+  @apply !text-gray-400;
+}
+
+/* Focus state: make flag dropdown border match primary when input is focused */
+.react-tel-input:focus-within .flag-dropdown {
+  border-color: var(--primary) !important;
+}
+
+/* Subtle border animation for corporate toggle - traveling light effect */
+@keyframes border-travel {
+  0% {
+    background-position: -100% 0;
+  }
+
+  100% {
+    background-position: 100% 0;
+  }
+}
+
+/* Keep spin-slow as fallback */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+/* Progress bar animation for auto-close modals */
+@keyframes progress {
+  from {
+    width: 0%;
+  }
+
+  to {
+    width: 100%;
+  }
+}
+
+.animate-progress {
+  animation: progress 3s linear forwards;
+}
+
+/* Welcome page animations */
+@keyframes blob {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* `forwards` keeps final keyframe opacity/transform — without it, elements with `opacity-0` revert
+   to hidden when the animation ends (welcome CTA buttons “disappear” after ~1–2s). */
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s ease-out forwards;
+}
+
+/* React Select theming (ensures visible backgrounds in light/dark) */
+.react-select__control {
+  background-color: #ffffff !important;
+  background-color: var(--form-control-bg) !important;
+  border-color: #e5e7eb !important;
+  border-color: var(--form-control-border) !important;
+  min-height: 44px;
+}
+
+.react-select__control--is-focused {
+  border-color: var(--ring) !important;
+}
+
+.react-select__single-value {
+  color: var(--foreground) !important;
+}
+
+.react-select__menu {
+  background-color: #ffffff !important;
+  background-color: var(--form-control-bg) !important;
+  border: 1px solid #e5e7eb !important;
+  border: 1px solid var(--form-control-border) !important;
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+}
+
+.react-select__menu-list {
+  background-color: #ffffff !important;
+  background-color: var(--form-control-bg) !important;
+  padding: 8px !important;
+}
+
+.react-select__option {
+  background-color: #ffffff !important;
+  background-color: var(--form-control-bg) !important;
+  color: var(--foreground) !important;
+  border-radius: 0.375rem;
+  margin: 2px 0;
+}
+
+.react-select__option--is-focused {
+  background-color: #f3f4f6 !important;
+  background-color: var(--select-option-hover-bg) !important;
+}
+
+.react-select__option--is-selected {
+  background-color: #29296e !important;
+  background-color: var(--select-option-selected-bg) !important;
+  color: var(--select-option-selected-fg) !important;
+}
+
+input:-webkit-autofill,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--foreground) !important;
+  caret-color: var(--foreground) !important;
+  box-shadow: 0 0 0px 1000px var(--form-control-bg) inset !important;
+}
+
+/* Thin shimmer effect for list cards */
+.shimmer-card {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.04),
+    transparent
+  );
+  transition: none;
+  pointer-events: none;
+}
+.shimmer-card:hover::after {
+  animation: card-shimmer 1.2s ease-in-out;
+}
+@keyframes card-shimmer {
+  0% {
+    left: -50%;
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+/* Shimmer animation for button */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: translateX(100%);
+    opacity: 0.35;
+  }
+}
+
+.modern-scrollbar {
+  scrollbar-width: thin;
+  /* Thumb color then track color (Firefox) */
+  scrollbar-color: var(--primary) rgba(41, 41, 110, 0.12);
+  scrollbar-gutter: stable both-edges;
+}
+
+.modern-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modern-scrollbar::-webkit-scrollbar-track {
+  background: rgba(41, 41, 110, 0.12);
+  border-radius: 9999px;
+}
+
+.modern-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--primary);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  opacity: 0.45;
+}
+
+.modern-scrollbar::-webkit-scrollbar-thumb:hover {
+  opacity: 0.7;
+}
+
+/* Slim horizontal scrollbar for tabs */
+.slim-scroll {
+  scrollbar-width: none;
+}
+
+.slim-scroll::-webkit-scrollbar {
+  height: 2px;
+}
+
+.slim-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.slim-scroll::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+}
+
+.slim-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+.dark .slim-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
+}

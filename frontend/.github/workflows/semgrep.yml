@@ -1,0 +1,45 @@
+name: semgrep
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Semgrep
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install semgrep
+
+      - name: Run Semgrep (security + secrets)
+        run: |
+          semgrep scan \
+            --sarif \
+            --output semgrep.sarif \
+            --error \
+            --config p/secrets \
+            --config p/nextjs \
+            --config p/nodejs \
+            --config p/typescript \
+            --config .semgrep.yml \
+            .
+
+      - name: Upload Semgrep SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
