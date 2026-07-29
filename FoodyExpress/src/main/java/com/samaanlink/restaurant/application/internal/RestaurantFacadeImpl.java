@@ -147,6 +147,19 @@ public class RestaurantFacadeImpl implements RestaurantFacade {
 
 	@Override
 	@Transactional(readOnly = true)
+	public List<RestaurantSummary> listRestaurants() {
+		return restaurantRepository.findAll().stream().map(this::toSummary).toList();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public RestaurantSummary findRestaurantForUser(UUID userId) {
+		return restaurantUserRepository.findByUserId(userId).map(RestaurantUser::getRestaurant).map(this::toSummary)
+				.orElseThrow(() -> new RestaurantException("No restaurant linked to this user"));
+	}
+
+	@Override
+	@Transactional(readOnly = true)
 	public List<BranchSummary> listBranches(UUID restaurantId) {
 		return branchRepository.findByRestaurantId(restaurantId).stream().map(this::toSummary).toList();
 	}
