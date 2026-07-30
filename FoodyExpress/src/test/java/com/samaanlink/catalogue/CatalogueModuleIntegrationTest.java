@@ -49,4 +49,41 @@ class CatalogueModuleIntegrationTest extends AbstractIntegrationTest {
 
 		assertThatThrownBy(() -> catalogueFacade.createProduct(command)).isInstanceOf(CatalogueException.class);
 	}
+
+	@Test
+	void deletesAProductThatHasNoOtherReferences() {
+		CategorySummary category = catalogueFacade.createCategory(new CreateCategoryCommand("Deletable", null));
+		ProductSummary product = catalogueFacade.createProduct(new CreateProductCommand("Throwaway", null,
+				category.id(), "SKU-DELETE-1", null, "KG", "KG", BigDecimal.ONE, BigDecimal.ONE, null));
+
+		catalogueFacade.deleteProduct(product.id());
+
+		assertThat(catalogueFacade.productExists(product.id())).isFalse();
+	}
+
+	@Test
+	void cannotDeleteACategoryThatStillHasProducts() {
+		CategorySummary category = catalogueFacade.createCategory(new CreateCategoryCommand("Non-empty", null));
+		catalogueFacade.createProduct(new CreateProductCommand("Blocker", null, category.id(), "SKU-BLOCKER-1", null,
+				"KG", "KG", BigDecimal.ONE, BigDecimal.ONE, null));
+
+		assertThatThrownBy(() -> catalogueFacade.deleteCategory(category.id())).isInstanceOf(CatalogueException.class);
+	}
+
+	@Test
+	void cannotDeleteACategoryThatStillHasSubcategories() {
+		CategorySummary parent = catalogueFacade.createCategory(new CreateCategoryCommand("Parent", null));
+		catalogueFacade.createCategory(new CreateCategoryCommand("Child", parent.id()));
+
+		assertThatThrownBy(() -> catalogueFacade.deleteCategory(parent.id())).isInstanceOf(CatalogueException.class);
+	}
+
+	@Test
+	void deletesAnEmptyCategory() {
+		CategorySummary category = catalogueFacade.createCategory(new CreateCategoryCommand("Empty", null));
+
+		catalogueFacade.deleteCategory(category.id());
+
+		assertThat(catalogueFacade.listCategories()).extracting(CategorySummary::id).doesNotContain(category.id());
+	}
 }

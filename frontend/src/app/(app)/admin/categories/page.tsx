@@ -14,7 +14,8 @@ import {
 import { FormInput } from '@/components/ui/form-input';
 import { FormButton } from '@/components/ui/form-button';
 import { useSession } from '@/lib/session';
-import { createCategory, listCategories, ApiError, type CategorySummary } from '@/lib/api';
+import { createCategory, listCategories, deleteCategory, ApiError, type CategorySummary } from '@/lib/api';
+import { Trash2 } from 'lucide-react';
 
 export default function AdminCategoriesPage() {
   const session = useSession();
@@ -22,6 +23,7 @@ export default function AdminCategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   function load() {
     if (!session) return;
@@ -47,6 +49,21 @@ export default function AdminCategoriesPage() {
       toast.error(err instanceof ApiError ? err.message : 'Could not add category');
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function handleDelete(category: CategorySummary) {
+    if (!session) return;
+    if (!confirm(`Delete category "${category.name}"?`)) return;
+    setDeletingId(category.id);
+    try {
+      await deleteCategory(session.accessToken, category.id);
+      toast.success('Category deleted');
+      load();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not delete category');
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -77,6 +94,7 @@ export default function AdminCategoriesPage() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className='text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -84,6 +102,17 @@ export default function AdminCategoriesPage() {
               <TableRow key={c.id}>
                 <TableCell>{c.name}</TableCell>
                 <TableCell>{c.status}</TableCell>
+                <TableCell className='text-right'>
+                  <FormButton
+                    variant='ghost'
+                    size='icon'
+                    fullWidth={false}
+                    loading={deletingId === c.id}
+                    onClick={() => handleDelete(c)}
+                  >
+                    <Trash2 className='text-destructive size-4' />
+                  </FormButton>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

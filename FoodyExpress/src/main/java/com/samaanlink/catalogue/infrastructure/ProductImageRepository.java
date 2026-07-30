@@ -10,4 +10,6 @@ import com.samaanlink.catalogue.domain.ProductImage;
 public interface ProductImageRepository extends JpaRepository<ProductImage, UUID> {
 
 	List<ProductImage> findByProductIdOrderBySortOrder(UUID productId);
+
+	void deleteByProductId(UUID productId);
 }

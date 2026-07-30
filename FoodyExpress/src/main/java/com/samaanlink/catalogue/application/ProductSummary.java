@@ -15,5 +15,6 @@ public record ProductSummary(
 		BigDecimal packageSize,
 		BigDecimal unitsPerPackage,
 		BigDecimal weightKg,
-		String status) {
+		String status,
+		String imageUrl) {
 }

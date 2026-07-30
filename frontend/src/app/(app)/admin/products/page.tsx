@@ -20,12 +20,15 @@ import {
   listCategories,
   activateProduct,
   discontinueProduct,
+  deleteProduct,
   setPurchasePrice,
   setStandardSellingPrice,
+  addProductImage,
   ApiError,
   type ProductSummary,
   type CategorySummary
 } from '@/lib/api';
+import { Package, Trash2 } from 'lucide-react';
 
 const UNITS = ['KG', 'G', 'L', 'PIECE', 'PACK', 'BOX'];
 
@@ -42,7 +45,8 @@ export default function AdminProductsPage() {
     purchaseUnitCode: 'KG',
     sellingUnitCode: 'KG',
     packageSize: '1',
-    unitsPerPackage: '1'
+    unitsPerPackage: '1',
+    imageUrl: ''
   });
   const [creating, setCreating] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -72,7 +76,7 @@ export default function AdminProductsPage() {
     }
     setCreating(true);
     try {
-      await createProduct(session.accessToken, {
+      const product = await createProduct(session.accessToken, {
         name: form.name.trim(),
         sku: form.sku.trim(),
         categoryId: form.categoryId,
@@ -81,8 +85,11 @@ export default function AdminProductsPage() {
         packageSize: Number(form.packageSize) || 1,
         unitsPerPackage: Number(form.unitsPerPackage) || 1
       });
+      if (form.imageUrl.trim()) {
+        await addProductImage(session.accessToken, product.id, form.imageUrl.trim());
+      }
       toast.success('Product added (inactive until activated)');
-      setForm({ ...form, name: '', sku: '' });
+      setForm({ ...form, name: '', sku: '', imageUrl: '' });
       load();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not add product');
@@ -114,6 +121,21 @@ export default function AdminProductsPage() {
       load();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not discontinue product');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleDelete(product: ProductSummary) {
+    if (!session) return;
+    if (!confirm(`Delete product "${product.name}"? This cannot be undone.`)) return;
+    setBusyId(product.id);
+    try {
+      await deleteProduct(session.accessToken, product.id);
+      toast.success('Product deleted');
+      load();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not delete product');
     } finally {
       setBusyId(null);
     }
@@ -188,6 +210,14 @@ export default function AdminProductsPage() {
             ))}
           </select>
         </div>
+        <FormInput
+          id='imageUrl'
+          label='Image URL'
+          placeholder='https://…'
+          value={form.imageUrl}
+          onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+          wrapperClassName='sm:col-span-2 md:col-span-2'
+        />
         <FormButton type='submit' loading={creating} className='self-end'>
           Add product
         </FormButton>
@@ -201,6 +231,7 @@ export default function AdminProductsPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead />
               <TableHead>Name</TableHead>
               <TableHead>SKU</TableHead>
               <TableHead>Category</TableHead>
@@ -218,6 +249,8 @@ export default function AdminProductsPage() {
                 busy={busyId === p.id}
                 onActivate={() => handleActivate(p.id)}
                 onDiscontinue={() => handleDiscontinue(p.id)}
+                onDelete={() => handleDelete(p)}
+                onImageChanged={load}
               />
             ))}
           </TableBody>
@@ -232,17 +265,40 @@ function ProductRow({
   token,
   busy,
   onActivate,
-  onDiscontinue
+  onDiscontinue,
+  onDelete,
+  onImageChanged
 }: {
   product: ProductSummary;
   token: string;
   busy: boolean;
   onActivate: () => void;
   onDiscontinue: () => void;
+  onDelete: () => void;
+  onImageChanged: () => void;
 }) {
   const [purchasePrice, setPurchasePriceValue] = useState('');
   const [sellingPrice, setSellingPriceValue] = useState('');
   const [savingPrices, setSavingPrices] = useState(false);
+  const [editingImage, setEditingImage] = useState(false);
+  const [imageUrlInput, setImageUrlInput] = useState('');
+  const [savingImage, setSavingImage] = useState(false);
+
+  async function handleSaveImage() {
+    if (!imageUrlInput.trim()) return;
+    setSavingImage(true);
+    try {
+      await addProductImage(token, product.id, imageUrlInput.trim());
+      toast.success('Image updated');
+      setEditingImage(false);
+      setImageUrlInput('');
+      onImageChanged();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not update image');
+    } finally {
+      setSavingImage(false);
+    }
+  }
 
   async function handleSavePrices() {
     if (!purchasePrice && !sellingPrice) return;
@@ -262,6 +318,44 @@ function ProductRow({
 
   return (
     <TableRow>
+      <TableCell>
+        {editingImage ? (
+          <div className='flex items-center gap-1'>
+            <input
+              autoFocus
+              className='border-input bg-background h-8 w-32 rounded-md border px-2 text-xs'
+              placeholder='Image URL'
+              value={imageUrlInput}
+              onChange={(e) => setImageUrlInput(e.target.value)}
+            />
+            <FormButton
+              variant='outline'
+              size='sm'
+              fullWidth={false}
+              loading={savingImage}
+              onClick={handleSaveImage}
+            >
+              Save
+            </FormButton>
+          </div>
+        ) : (
+          <button
+            onClick={() => {
+              setImageUrlInput(product.imageUrl ?? '');
+              setEditingImage(true);
+            }}
+            className='bg-muted hover:ring-primary flex size-10 items-center justify-center overflow-hidden rounded-md transition-shadow hover:ring-2'
+            title='Set image'
+          >
+            {product.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={product.imageUrl} alt='' className='size-full object-cover' />
+            ) : (
+              <Package className='text-muted-foreground/50 size-5' />
+            )}
+          </button>
+        )}
+      </TableCell>
       <TableCell>{product.name}</TableCell>
       <TableCell>{product.sku}</TableCell>
       <TableCell>{product.categoryName}</TableCell>
@@ -292,21 +386,33 @@ function ProductRow({
         </div>
       </TableCell>
       <TableCell className='text-right'>
-        {product.status === 'ACTIVE' ? (
+        <div className='flex items-center justify-end gap-1'>
+          {product.status === 'ACTIVE' ? (
+            <FormButton
+              variant='ghost'
+              size='sm'
+              fullWidth={false}
+              loading={busy}
+              onClick={onDiscontinue}
+            >
+              Discontinue
+            </FormButton>
+          ) : (
+            <FormButton variant='ghost' size='sm' fullWidth={false} loading={busy} onClick={onActivate}>
+              Activate
+            </FormButton>
+          )}
           <FormButton
             variant='ghost'
-            size='sm'
+            size='icon'
             fullWidth={false}
             loading={busy}
-            onClick={onDiscontinue}
+            onClick={onDelete}
+            title='Delete product'
           >
-            Discontinue
+            <Trash2 className='text-destructive size-4' />
           </FormButton>
-        ) : (
-          <FormButton variant='ghost' size='sm' fullWidth={false} loading={busy} onClick={onActivate}>
-            Activate
-          </FormButton>
-        )}
+        </div>
       </TableCell>
     </TableRow>
   );

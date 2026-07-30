@@ -112,6 +112,7 @@ export interface ProductSummary {
   unitsPerPackage: string;
   weightKg: string | null;
   status: string;
+  imageUrl: string | null;
 }
 
 export function createCategory(
@@ -127,6 +128,12 @@ export function createCategory(
 
 export function listCategories(token: string) {
   return request<CategorySummary[]>('/categories', token);
+}
+
+export function deleteCategory(token: string, categoryId: string) {
+  return request<void>(`/categories/${categoryId}`, token, {
+    method: 'DELETE'
+  });
 }
 
 export function createProduct(
@@ -167,9 +174,22 @@ export function activateProduct(token: string, productId: string) {
   });
 }
 
+export function addProductImage(token: string, productId: string, url: string) {
+  return request<void>(`/products/${productId}/images`, token, {
+    method: 'POST',
+    body: JSON.stringify({ url, sortOrder: 0 })
+  });
+}
+
 export function discontinueProduct(token: string, productId: string) {
   return request<void>(`/products/${productId}/discontinue`, token, {
     method: 'PUT'
+  });
+}
+
+export function deleteProduct(token: string, productId: string) {
+  return request<void>(`/products/${productId}`, token, {
+    method: 'DELETE'
   });
 }
 

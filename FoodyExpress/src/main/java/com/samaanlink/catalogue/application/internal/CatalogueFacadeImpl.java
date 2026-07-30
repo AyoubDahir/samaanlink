@@ -56,6 +56,21 @@ public class CatalogueFacadeImpl implements CatalogueFacade {
 
 	@Override
 	@Transactional
+	public void deleteCategory(UUID categoryId) {
+		if (!categoryRepository.existsById(categoryId)) {
+			throw new CatalogueException("Category not found");
+		}
+		if (productRepository.existsByCategoryId(categoryId)) {
+			throw new CatalogueException("Cannot delete a category that still has products - move or delete them first");
+		}
+		if (categoryRepository.existsByParentCategoryId(categoryId)) {
+			throw new CatalogueException("Cannot delete a category that still has subcategories - move or delete them first");
+		}
+		categoryRepository.deleteById(categoryId);
+	}
+
+	@Override
+	@Transactional
 	public ProductSummary createProduct(CreateProductCommand command) {
 		if (productRepository.existsBySku(command.sku())) {
 			throw new CatalogueException("A product with this SKU already exists");
@@ -72,6 +87,16 @@ public class CatalogueFacadeImpl implements CatalogueFacade {
 				command.weightKg());
 		product = productRepository.save(product);
 		return toSummary(product);
+	}
+
+	@Override
+	@Transactional
+	public void deleteProduct(UUID productId) {
+		if (!productRepository.existsById(productId)) {
+			throw new CatalogueException("Product not found");
+		}
+		productImageRepository.deleteByProductId(productId);
+		productRepository.deleteById(productId);
 	}
 
 	@Override
@@ -127,9 +152,11 @@ public class CatalogueFacadeImpl implements CatalogueFacade {
 	}
 
 	private ProductSummary toSummary(Product product) {
+		String imageUrl = productImageRepository.findByProductIdOrderBySortOrder(product.getId()).stream()
+				.findFirst().map(ProductImage::getUrl).orElse(null);
 		return new ProductSummary(product.getId(), product.getName(), product.getSku(), product.getBarcode(),
 				product.getCategory().getId(), product.getCategory().getName(), product.getPurchaseUnit().getCode(),
 				product.getSellingUnit().getCode(), product.getPackageSize(), product.getUnitsPerPackage(),
-				product.getWeightKg(), product.getStatus().name());
+				product.getWeightKg(), product.getStatus().name(), imageUrl);
 	}
 }

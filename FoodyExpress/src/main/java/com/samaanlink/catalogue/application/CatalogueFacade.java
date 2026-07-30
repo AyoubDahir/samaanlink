@@ -14,7 +14,12 @@ public interface CatalogueFacade {
 
 	List<CategorySummary> listCategories();
 
+	/** Throws {@link CatalogueException} if the category still has products or subcategories under it. */
+	void deleteCategory(UUID categoryId);
+
 	ProductSummary createProduct(CreateProductCommand command);
+
+	void deleteProduct(UUID productId);
 
 	void activateProduct(UUID productId);
 

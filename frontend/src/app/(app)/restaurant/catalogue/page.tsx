@@ -175,8 +175,13 @@ function ProductCard({
         quantity > 0 && 'ring-primary ring-2'
       )}
     >
-      <div className='bg-muted flex aspect-square items-center justify-center'>
-        <Package className='text-muted-foreground/40 size-10' />
+      <div className='bg-muted flex aspect-square items-center justify-center overflow-hidden'>
+        {product.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={product.imageUrl} alt={product.name} className='size-full object-cover' />
+        ) : (
+          <Package className='text-muted-foreground/40 size-10' />
+        )}
       </div>
       <div className='flex flex-1 flex-col gap-2 px-3 pb-3'>
         <div className='min-h-10'>
