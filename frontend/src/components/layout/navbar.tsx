@@ -2,30 +2,35 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useSession, clearSession } from '@/lib/session';
+import { useSession, clearSession, isRestaurantRole, homeRouteFor } from '@/lib/session';
 import { logout as apiLogout } from '@/lib/api';
 import { FormButton } from '@/components/ui/form-button';
 import { ModeToggle } from '@/components/layout/ThemeToggle/theme-toggle';
 import {
-  ShoppingCart,
   ClipboardList,
-  UtensilsCrossed,
   Store,
-  LayoutGrid
+  LayoutGrid,
+  Package,
+  MapPin,
+  Tag,
+  Truck,
+  ShoppingBag
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const customerLinks = [
-  { href: '/menu', label: 'Menu', icon: UtensilsCrossed },
-  { href: '/restaurants', label: 'Restaurants', icon: Store },
-  { href: '/cart', label: 'Cart', icon: ShoppingCart },
-  { href: '/orders', label: 'Orders', icon: ClipboardList }
+const restaurantLinks = [
+  { href: '/restaurant/catalogue', label: 'Catalogue', icon: Package },
+  { href: '/restaurant/orders', label: 'Orders', icon: ClipboardList },
+  { href: '/restaurant/addresses', label: 'Addresses', icon: MapPin }
 ];
 
 const adminLinks = [
   { href: '/admin/categories', label: 'Categories', icon: LayoutGrid },
-  { href: '/admin/items', label: 'Items', icon: UtensilsCrossed },
-  { href: '/admin/restaurants', label: 'Restaurants', icon: Store }
+  { href: '/admin/products', label: 'Products', icon: Tag },
+  { href: '/admin/restaurants', label: 'Restaurants', icon: Store },
+  { href: '/admin/orders', label: 'Orders', icon: ClipboardList },
+  { href: '/admin/suppliers', label: 'Suppliers', icon: Truck },
+  { href: '/admin/procurement', label: 'Procurement', icon: ShoppingBag }
 ];
 
 export function Navbar() {
@@ -33,12 +38,12 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const links = session?.role === 'admin' ? adminLinks : customerLinks;
+  const links = session && isRestaurantRole(session.role) ? restaurantLinks : adminLinks;
 
   async function handleLogout() {
     if (session) {
       try {
-        await apiLogout(session.role, session.key);
+        await apiLogout(session.refreshToken);
       } catch {
         // best-effort — clear local session regardless of backend result
       }
@@ -51,7 +56,7 @@ export function Navbar() {
     <header className='bg-background sticky top-0 z-40 border-b'>
       <div className='mx-auto flex h-14 max-w-5xl items-center justify-between px-4'>
         <Link
-          href={session?.role === 'admin' ? '/admin/categories' : '/menu'}
+          href={session ? homeRouteFor(session.role) : '/sign-in'}
           className='text-primary text-lg font-bold'
         >
           SamaanLink
@@ -76,6 +81,11 @@ export function Navbar() {
           </nav>
         )}
         <div className='flex items-center gap-2'>
+          {session && (
+            <span className='text-muted-foreground hidden text-xs sm:inline'>
+              {session.role.replaceAll('_', ' ')}
+            </span>
+          )}
           <ModeToggle />
           {session && (
             <FormButton

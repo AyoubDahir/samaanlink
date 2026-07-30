@@ -11,5 +11,7 @@ public interface SupplierProductRepository extends JpaRepository<SupplierProduct
 
 	List<SupplierProduct> findByProductId(UUID productId);
 
+	List<SupplierProduct> findBySupplierId(UUID supplierId);
+
 	boolean existsBySupplierIdAndProductId(UUID supplierId, UUID productId);
 }

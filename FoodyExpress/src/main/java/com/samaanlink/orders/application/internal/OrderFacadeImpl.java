@@ -126,6 +126,13 @@ public class OrderFacadeImpl implements OrderFacade {
 				.map(order -> toSummary(order, orderLineRepository.findByOrderId(order.getId()))).toList();
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public List<OrderSummary> listAllOrders() {
+		return orderRepository.findAll().stream()
+				.map(order -> toSummary(order, orderLineRepository.findByOrderId(order.getId()))).toList();
+	}
+
 	private Order requireOrder(UUID orderId) {
 		return orderRepository.findById(orderId).orElseThrow(() -> new OrderException("Order not found"));
 	}

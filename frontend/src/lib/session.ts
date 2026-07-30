@@ -1,19 +1,28 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-export type Role = 'customer' | 'admin';
+import type { AppRole } from '@/lib/api';
 
 export interface Session {
-  key: string;
-  role: Role;
-  email: string;
-  customerId?: number;
-  firstName?: string;
+  accessToken: string;
+  refreshToken: string;
+  userId: string;
+  role: AppRole;
 }
 
 const STORAGE_KEY = 'samaanlink_session';
 const SESSION_EVENT = 'samaanlink-session-changed';
+
+const RESTAURANT_ROLES: AppRole[] = ['RESTAURANT_OWNER', 'RESTAURANT_STAFF'];
+
+export function isRestaurantRole(role: AppRole): boolean {
+  return RESTAURANT_ROLES.includes(role);
+}
+
+/** Landing route for a freshly-authenticated session, based on role. */
+export function homeRouteFor(role: AppRole): string {
+  return isRestaurantRole(role) ? '/restaurant/orders' : '/admin/categories';
+}
 
 export function getSession(): Session | null {
   if (typeof window === 'undefined') return null;

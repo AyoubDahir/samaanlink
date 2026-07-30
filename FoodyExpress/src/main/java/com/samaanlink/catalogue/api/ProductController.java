@@ -46,8 +46,10 @@ public class ProductController {
 	}
 
 	@GetMapping
-	public ResponseEntity<List<ProductSummary>> listByCategory(@RequestParam UUID categoryId) {
-		return ResponseEntity.ok(catalogueFacade.listProductsByCategory(categoryId));
+	public ResponseEntity<List<ProductSummary>> list(@RequestParam(required = false) UUID categoryId) {
+		List<ProductSummary> products = categoryId != null ? catalogueFacade.listProductsByCategory(categoryId)
+				: catalogueFacade.listProducts();
+		return ResponseEntity.ok(products);
 	}
 
 	@PostMapping("/{id}/images")

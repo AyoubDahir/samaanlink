@@ -1,39 +1,26 @@
 /**
- * FoodyExpress API client.
- *
- * Auth model: POST /app/login returns a short session `key` string (no JWT).
- * Every protected call passes that key as a `key` query param. Requests are
- * routed through the same-origin `/api/foody/*` Next.js rewrite (see
- * next.config.ts) so the browser never needs CORS against the backend.
- *
- * Known backend gaps (by design, not bugs): Item<->Restaurant is a hidden
- * (@JsonIgnore both sides) many-to-many, so there is no "menu for this
- * restaurant" endpoint — items are browsed by Category instead. Restaurants
- * are a separate directory (address/contact), not a menu owner in the UI.
+ * com.samaanlink API client - the JWT-secured B2B procurement backend. Routed through
+ * `/api/samaanlink/*` (see next.config.ts), which forwards to the backend's `/api/v1/*`.
  */
 
-const API_BASE = '/api/foody';
+const API_BASE = '/api/samaanlink';
 
-export class FoodyApiError extends Error {}
+export class ApiError extends Error {}
 
-function qs(
-  params: Record<string, string | number | undefined | null>
-): string {
-  const usp = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== null && v !== '') usp.set(k, String(v));
-  }
-  const s = usp.toString();
-  return s ? `?${s}` : '';
-}
+async function request<T>(
+  path: string,
+  token: string | null,
+  init: RequestInit = {}
+): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(init.headers as Record<string, string>)
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
 
-async function foodyFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...init.headers
-    },
+    headers,
     cache: 'no-store'
   });
 
@@ -57,371 +44,516 @@ async function foodyFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
         : typeof body === 'string' && body
           ? body
           : `Request failed (${res.status})`;
-    throw new FoodyApiError(message);
+    throw new ApiError(message);
   }
 
   return body as T;
 }
 
 // ---------------------------------------------------------------------------
-// Types (mirror FoodyExpress JPA entities / DTOs)
-// ---------------------------------------------------------------------------
-
-export type Role = 'customer' | 'admin';
-
-export interface LoginResponse {
-  message: string;
-  key: string;
-  role: Role;
-  customerId: number | null;
-}
-
-export interface Address {
-  addressId?: number;
-  buildingName?: string;
-  streetNo?: string;
-  area?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  pincode?: string;
-}
-
-export interface Category {
-  categoryId: number;
-  categoryName: string;
-}
-
-export interface Item {
-  itemId: number;
-  itemName: string;
-  category: Category;
-  quantity: number;
-  cost: number;
-}
-
-export interface Restaurant {
-  restaurantId: number;
-  restaurantName: string;
-  address: Address;
-  managerName?: string;
-  contactNunber?: string;
-}
-
-export interface FoodCart {
-  cartId: number;
-  itemList: Item[];
-}
-
-export interface Customer {
-  customerId: number;
-  firstName: string;
-  lastName: string;
-  age?: number | null;
-  gender?: string | null;
-  mobileNumber?: string;
-  email: string;
-  cart?: FoodCart;
-}
-
-export interface OrderDetails {
-  orderId: number;
-  orderDate: string;
-  foodCart: FoodCart;
-  orderStatus: string;
-}
-
-export interface Bill {
-  billId: number;
-  billDate: string;
-  totalCost: number;
-  totalItem: number;
-  order: OrderDetails;
-}
-
-export interface OrderHistory {
-  orderHistoryId: number;
-  customerId: number;
-  bill: Bill;
-}
-
-// ---------------------------------------------------------------------------
 // Auth
 // ---------------------------------------------------------------------------
 
-export function login(email: string, password: string, role: Role) {
-  return foodyFetch<LoginResponse>('/app/login', {
+export type AppRole =
+  | 'SUPER_ADMIN'
+  | 'COMPANY_MANAGER'
+  | 'FINANCE_OFFICER'
+  | 'PROCUREMENT_OFFICER'
+  | 'WAREHOUSE_OFFICER'
+  | 'SALES_OFFICER'
+  | 'DELIVERY_COORDINATOR'
+  | 'DRIVER'
+  | 'RESTAURANT_OWNER'
+  | 'RESTAURANT_STAFF';
+
+export interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+  expiresInSeconds: number;
+  userId: string;
+  roleName: AppRole;
+}
+
+export function login(email: string, password: string) {
+  return request<AuthResponse>('/auth/login', null, {
     method: 'POST',
-    body: JSON.stringify({ email, password, role })
+    body: JSON.stringify({ email, password })
   });
 }
 
-export function logout(role: Role, key: string) {
-  return foodyFetch<string>(`/app/logout${qs({ role, key })}`, {
-    method: 'POST'
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Customers
-// ---------------------------------------------------------------------------
-
-export function registerCustomer(customer: {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  mobileNumber?: string;
-  age?: number;
-  gender?: string;
-}) {
-  return foodyFetch<Customer>('/customers/add', {
+export function logout(refreshToken: string) {
+  return request<void>('/auth/logout', null, {
     method: 'POST',
-    body: JSON.stringify(customer)
-  });
-}
-
-export function getCustomer(key: string, customerId: number) {
-  return foodyFetch<Customer>(`/customers/all/${customerId}${qs({ key })}`);
-}
-
-// ---------------------------------------------------------------------------
-// Categories
-// ---------------------------------------------------------------------------
-
-export function getAllCategories(key: string) {
-  return foodyFetch<Category[]>(`/category/viewall${qs({ key })}`);
-}
-
-export function addCategory(key: string, categoryName: string) {
-  return foodyFetch<Category>(`/category/add${qs({ key, categoryName })}`, {
-    method: 'POST'
-  });
-}
-
-export function updateCategory(key: string, category: Category) {
-  return foodyFetch<Category>(`/category/update${qs({ key })}`, {
-    method: 'PUT',
-    body: JSON.stringify(category)
-  });
-}
-
-export function removeCategory(key: string, categoryName: string) {
-  return foodyFetch<Category>(`/category/remove${qs({ key, categoryName })}`, {
-    method: 'DELETE'
+    body: JSON.stringify({ refreshToken })
   });
 }
 
 // ---------------------------------------------------------------------------
-// Items (menu)
+// Catalogue
 // ---------------------------------------------------------------------------
 
-export function getAllItems(key: string) {
-  return foodyFetch<Item[]>(`/items/all${qs({ key })}`);
+export interface CategorySummary {
+  id: string;
+  name: string;
+  parentCategoryId: string | null;
+  status: string;
 }
 
-export function getItemsByCategoryName(key: string, categoryName: string) {
-  return foodyFetch<Item[]>(
-    `/items/get/${encodeURIComponent(categoryName)}${qs({ key })}`
-  );
+export interface ProductSummary {
+  id: string;
+  name: string;
+  sku: string;
+  barcode: string | null;
+  categoryId: string;
+  categoryName: string;
+  purchaseUnitCode: string;
+  sellingUnitCode: string;
+  packageSize: string;
+  unitsPerPackage: string;
+  weightKg: string | null;
+  status: string;
 }
 
-export function addItem(
-  key: string,
-  item: {
-    itemName: string;
-    quantity: number;
-    cost: number;
-    categoryName: string;
+export function createCategory(
+  token: string,
+  name: string,
+  parentCategoryId?: string
+) {
+  return request<CategorySummary>('/categories', token, {
+    method: 'POST',
+    body: JSON.stringify({ name, parentCategoryId })
+  });
+}
+
+export function listCategories(token: string) {
+  return request<CategorySummary[]>('/categories', token);
+}
+
+export function createProduct(
+  token: string,
+  input: {
+    name: string;
+    description?: string;
+    categoryId: string;
+    sku: string;
+    barcode?: string;
+    purchaseUnitCode: string;
+    sellingUnitCode: string;
+    packageSize: number;
+    unitsPerPackage: number;
+    weightKg?: number;
   }
 ) {
-  return foodyFetch<Item>(`/items/add${qs({ key })}`, {
+  return request<ProductSummary>('/products', token, {
     method: 'POST',
-    body: JSON.stringify({
-      itemName: item.itemName,
-      quantity: item.quantity,
-      cost: item.cost,
-      category: { categoryName: item.categoryName }
-    })
+    body: JSON.stringify(input)
   });
 }
 
-export function updateItem(
-  key: string,
-  itemDTO: {
-    itemId: number;
-    catergoryId?: number;
-    itemName?: string;
-    quantity?: number;
-    cost?: number;
-  }
+export function listProducts(token: string) {
+  return request<ProductSummary[]>('/products', token);
+}
+
+export function listProductsByCategory(token: string, categoryId: string) {
+  return request<ProductSummary[]>(
+    `/products?categoryId=${encodeURIComponent(categoryId)}`,
+    token
+  );
+}
+
+export function activateProduct(token: string, productId: string) {
+  return request<void>(`/products/${productId}/activate`, token, {
+    method: 'PUT'
+  });
+}
+
+export function discontinueProduct(token: string, productId: string) {
+  return request<void>(`/products/${productId}/discontinue`, token, {
+    method: 'PUT'
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Pricing
+// ---------------------------------------------------------------------------
+
+export function setPurchasePrice(
+  token: string,
+  productId: string,
+  price: number
 ) {
-  return foodyFetch<Item>(`/items/update${qs({ key })}`, {
+  return request<void>(`/pricing/products/${productId}/purchase-price`, token, {
     method: 'PUT',
-    body: JSON.stringify(itemDTO)
+    body: JSON.stringify({ price })
   });
 }
 
-export function removeItem(key: string, itemId: number) {
-  return foodyFetch<Item>(`/items/delete/${itemId}${qs({ key })}`, {
-    method: 'DELETE'
+export function setStandardSellingPrice(
+  token: string,
+  productId: string,
+  price: number
+) {
+  return request<void>(`/pricing/products/${productId}/selling-price`, token, {
+    method: 'PUT',
+    body: JSON.stringify({ price })
   });
 }
 
 // ---------------------------------------------------------------------------
-// Restaurants
+// Restaurant
 // ---------------------------------------------------------------------------
 
-export function getAllRestaurants(key: string) {
-  return foodyFetch<Restaurant[]>(`/restaurants/view${qs({ key })}`);
+export interface RestaurantSummary {
+  id: string;
+  name: string;
+  creditLimit: string;
+  paymentTermDays: number;
+  status: string;
 }
 
-export function getRestaurant(key: string, id: number) {
-  return foodyFetch<Restaurant>(`/restaurants/view/${id}${qs({ key })}`);
+export interface RegisteredRestaurant {
+  restaurant: RestaurantSummary;
+  ownerUserId: string;
+  primaryBranchId: string;
 }
 
-export function findRestaurantsByCity(key: string, city: string) {
-  return foodyFetch<Restaurant[]>(
-    `/restaurants/findNearByRestaurantByCity/${encodeURIComponent(city)}${qs({ key })}`
-  );
-}
-
-export function findRestaurantsByItemName(key: string, itemName: string) {
-  return foodyFetch<Restaurant[]>(
-    `/restaurants/findNearByRestaurantByItemName/${encodeURIComponent(itemName)}${qs({ key })}`
-  );
-}
-
-export function addRestaurant(
-  key: string,
-  restaurant: {
+export function registerRestaurant(
+  token: string,
+  input: {
     restaurantName: string;
-    managerName?: string;
-    contactNunber?: string;
-    address: Address;
+    creditLimit: number;
+    paymentTermDays: number;
+    primaryBranchName: string;
+    primaryBranchCity: string;
+    ownerEmail: string;
+    ownerPassword: string;
+    ownerFirstName: string;
+    ownerLastName: string;
+    ownerPhone?: string;
   }
 ) {
-  return foodyFetch<Restaurant>(`/restaurants/add${qs({ key })}`, {
+  return request<RegisteredRestaurant>('/restaurants', token, {
     method: 'POST',
-    body: JSON.stringify({ ...restaurant, itemList: [] })
+    body: JSON.stringify(input)
   });
 }
 
-export function updateRestaurant(key: string, restaurant: Restaurant) {
-  return foodyFetch<Restaurant>(`/restaurants/update${qs({ key })}`, {
-    method: 'PUT',
-    body: JSON.stringify(restaurant)
+export function listRestaurants(token: string) {
+  return request<RestaurantSummary[]>('/restaurants', token);
+}
+
+/** Resolves the logged-in restaurant owner/staff user's own restaurant. */
+export function myRestaurant(token: string) {
+  return request<RestaurantSummary>('/restaurants/me', token);
+}
+
+export function activateRestaurant(token: string, restaurantId: string) {
+  return request<void>(`/restaurants/${restaurantId}/activate`, token, {
+    method: 'PUT'
   });
 }
 
-export function removeRestaurant(key: string, restaurantId: number) {
-  return foodyFetch<Restaurant>(
-    `/restaurants/delete${qs({ key, restaurantId })}`,
-    { method: 'DELETE' }
-  );
+export function suspendRestaurant(token: string, restaurantId: string) {
+  return request<void>(`/restaurants/${restaurantId}/suspend`, token, {
+    method: 'PUT'
+  });
 }
 
-// ---------------------------------------------------------------------------
-// Cart
-// ---------------------------------------------------------------------------
-
-export function addItemToCart(key: string, customerId: number, itemId: number) {
-  return foodyFetch<FoodCart>(
-    `/foodcart/addtocart/${customerId}${qs({ key, itemId })}`,
-    {
-      method: 'POST'
-    }
-  );
+export interface BranchSummary {
+  id: string;
+  restaurantId: string;
+  name: string;
+  city: string;
+  primary: boolean;
 }
 
-export function increaseItemQuantity(
-  key: string,
-  cartId: number,
-  itemId: number,
-  quantity: number
+export function listBranches(token: string, restaurantId: string) {
+  return request<BranchSummary[]>(`/restaurants/${restaurantId}/branches`, token);
+}
+
+export interface DeliveryAddressSummary {
+  id: string;
+  branchId: string;
+  label: string;
+  addressLine: string;
+  city: string;
+  defaultAddress: boolean;
+}
+
+export function addDeliveryAddress(
+  token: string,
+  branchId: string,
+  input: {
+    label: string;
+    addressLine: string;
+    city: string;
+    defaultAddress: boolean;
+  }
 ) {
-  return foodyFetch<FoodCart>(
-    `/foodcart/increaseQuantity${qs({ key, cartId, itemId, quantity })}`,
-    {
-      method: 'PUT'
-    }
+  return request<DeliveryAddressSummary>(
+    `/restaurants/branches/${branchId}/addresses`,
+    token,
+    { method: 'POST', body: JSON.stringify(input) }
   );
 }
 
-export function decreaseItemQuantity(
-  key: string,
-  cartId: number,
-  itemId: number,
-  quantity: number
-) {
-  return foodyFetch<FoodCart>(
-    `/foodcart/decreaseQuantity${qs({ key, cartId, itemId, quantity })}`,
-    {
-      method: 'PUT'
-    }
+export function listDeliveryAddresses(token: string, branchId: string) {
+  return request<DeliveryAddressSummary[]>(
+    `/restaurants/branches/${branchId}/addresses`,
+    token
   );
-}
-
-export function removeItemFromCart(
-  key: string,
-  cartId: number,
-  itemId: number
-) {
-  return foodyFetch<FoodCart>(`/foodcart/item${qs({ key, cartId, itemId })}`, {
-    method: 'DELETE'
-  });
-}
-
-export function clearCart(key: string, cartId: number) {
-  return foodyFetch<FoodCart>(`/foodcart/delete${qs({ key, cartId })}`, {
-    method: 'DELETE'
-  });
 }
 
 // ---------------------------------------------------------------------------
 // Orders
 // ---------------------------------------------------------------------------
 
-export function placeOrder(key: string, customerId: number) {
-  return foodyFetch<OrderDetails>(`/order/add/${customerId}${qs({ key })}`, {
-    method: 'POST'
+export interface OrderLineSummary {
+  id: string;
+  productId: string;
+  quantity: string;
+  priceQuoteId: string;
+  lineTotal: string;
+}
+
+export interface OrderSummary {
+  id: string;
+  restaurantId: string;
+  deliveryAddressId: string;
+  status: string;
+  subtotal: string | null;
+  deliveryFee: string | null;
+  orderTotal: string | null;
+  createdAt: string;
+  placedAt: string | null;
+  lines: OrderLineSummary[];
+}
+
+export function createOrder(
+  token: string,
+  restaurantId: string,
+  deliveryAddressId: string
+) {
+  return request<OrderSummary>('/orders', token, {
+    method: 'POST',
+    body: JSON.stringify({ restaurantId, deliveryAddressId })
   });
 }
 
-export function getOrder(key: string, orderId: number) {
-  return foodyFetch<OrderDetails>(`/order/view/${orderId}${qs({ key })}`);
+export function addOrderLine(
+  token: string,
+  orderId: string,
+  productId: string,
+  quantity: number
+) {
+  return request<OrderLineSummary>(`/orders/${orderId}/lines`, token, {
+    method: 'POST',
+    body: JSON.stringify({ productId, quantity })
+  });
 }
 
-export function removeOrder(key: string, orderId: number) {
-  return foodyFetch<OrderDetails>(`/order/remove/${orderId}${qs({ key })}`, {
+export function removeOrderLine(token: string, orderId: string, lineId: string) {
+  return request<void>(`/orders/${orderId}/lines/${lineId}`, token, {
     method: 'DELETE'
   });
 }
 
-// ---------------------------------------------------------------------------
-// Bills
-// ---------------------------------------------------------------------------
-
-export function generateBill(key: string, customerId: number, orderId: number) {
-  return foodyFetch<Bill>(`/bill/add${qs({ key, customerId, orderId })}`, {
+export function placeOrder(token: string, orderId: string) {
+  return request<OrderSummary>(`/orders/${orderId}/place`, token, {
     method: 'POST'
   });
 }
 
-export function getBill(key: string, billId: number) {
-  return foodyFetch<Bill>(`/bill/view/${billId}${qs({ key })}`);
+export function cancelOrder(token: string, orderId: string) {
+  return request<void>(`/orders/${orderId}/cancel`, token, {
+    method: 'POST'
+  });
 }
 
-// ---------------------------------------------------------------------------
-// Order history
-// ---------------------------------------------------------------------------
+export function findOrder(token: string, orderId: string) {
+  return request<OrderSummary>(`/orders/${orderId}`, token);
+}
 
-export function getOrderHistoryByCustomer(key: string, customerId: number) {
-  return foodyFetch<OrderHistory[]>(
-    `/order-history/customer-id${qs({ key, customerId })}`
+export function listOrdersByRestaurant(token: string, restaurantId: string) {
+  return request<OrderSummary[]>(
+    `/orders?restaurantId=${encodeURIComponent(restaurantId)}`,
+    token
   );
 }
 
-export function getAllOrderHistory(key: string) {
-  return foodyFetch<OrderHistory[]>(`/order-history/all${qs({ key })}`);
+// ---------------------------------------------------------------------------
+// Billing
+// ---------------------------------------------------------------------------
+
+export interface BillSummary {
+  id: string;
+  orderId: string;
+  restaurantId: string;
+  amount: string;
+  status: string;
+  issuedAt: string;
+  paidAt: string | null;
+}
+
+export function generateBill(token: string, orderId: string) {
+  return request<BillSummary>('/bills', token, {
+    method: 'POST',
+    body: JSON.stringify({ orderId })
+  });
+}
+
+export function findBillByOrder(token: string, orderId: string) {
+  return request<BillSummary>(`/bills/by-order/${orderId}`, token);
+}
+
+export function payBill(token: string, billId: string) {
+  return request<BillSummary>(`/bills/${billId}/pay`, token, {
+    method: 'POST'
+  });
+}
+
+export function listBillsByRestaurant(token: string, restaurantId: string) {
+  return request<BillSummary[]>(
+    `/bills?restaurantId=${encodeURIComponent(restaurantId)}`,
+    token
+  );
+}
+
+export function listAllOrders(token: string) {
+  return request<OrderSummary[]>('/orders', token);
+}
+
+export function markOrderDelivered(token: string, orderId: string) {
+  return request<void>(`/orders/${orderId}/deliver`, token, {
+    method: 'POST'
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Supplier
+// ---------------------------------------------------------------------------
+
+export interface SupplierSummary {
+  id: string;
+  name: string;
+  leadTimeDays: number;
+  paymentTermDays: number;
+  status: string;
+}
+
+export function registerSupplier(
+  token: string,
+  input: { name: string; leadTimeDays: number; paymentTermDays: number }
+) {
+  return request<SupplierSummary>('/suppliers', token, {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+}
+
+export function listSuppliers(token: string) {
+  return request<SupplierSummary[]>('/suppliers', token);
+}
+
+export function activateSupplier(token: string, supplierId: string) {
+  return request<void>(`/suppliers/${supplierId}/activate`, token, {
+    method: 'PUT'
+  });
+}
+
+export function suspendSupplier(token: string, supplierId: string) {
+  return request<void>(`/suppliers/${supplierId}/suspend`, token, {
+    method: 'PUT'
+  });
+}
+
+export function linkSupplierProduct(
+  token: string,
+  supplierId: string,
+  productId: string,
+  supplierSku?: string
+) {
+  return request<void>(`/suppliers/${supplierId}/products`, token, {
+    method: 'POST',
+    body: JSON.stringify({ productId, supplierSku })
+  });
+}
+
+export function listSupplierProductIds(token: string, supplierId: string) {
+  return request<string[]>(`/suppliers/${supplierId}/products`, token);
+}
+
+// ---------------------------------------------------------------------------
+// Procurement (platform buying from a supplier)
+// ---------------------------------------------------------------------------
+
+export interface PurchaseOrderLineSummary {
+  id: string;
+  productId: string;
+  quantity: string;
+  unitCost: string;
+  lineTotal: string;
+}
+
+export interface PurchaseOrderSummary {
+  id: string;
+  supplierId: string;
+  status: string;
+  subtotal: string | null;
+  createdAt: string;
+  placedAt: string | null;
+  receivedAt: string | null;
+  lines: PurchaseOrderLineSummary[];
+}
+
+export function createPurchaseOrder(token: string, supplierId: string) {
+  return request<PurchaseOrderSummary>('/purchase-orders', token, {
+    method: 'POST',
+    body: JSON.stringify({ supplierId })
+  });
+}
+
+export function addPurchaseOrderLine(
+  token: string,
+  purchaseOrderId: string,
+  productId: string,
+  quantity: number,
+  unitCost: number
+) {
+  return request<PurchaseOrderLineSummary>(`/purchase-orders/${purchaseOrderId}/lines`, token, {
+    method: 'POST',
+    body: JSON.stringify({ productId, quantity, unitCost })
+  });
+}
+
+export function removePurchaseOrderLine(token: string, purchaseOrderId: string, lineId: string) {
+  return request<void>(`/purchase-orders/${purchaseOrderId}/lines/${lineId}`, token, {
+    method: 'DELETE'
+  });
+}
+
+export function placePurchaseOrder(token: string, purchaseOrderId: string) {
+  return request<PurchaseOrderSummary>(`/purchase-orders/${purchaseOrderId}/place`, token, {
+    method: 'POST'
+  });
+}
+
+export function receivePurchaseOrder(token: string, purchaseOrderId: string) {
+  return request<PurchaseOrderSummary>(`/purchase-orders/${purchaseOrderId}/receive`, token, {
+    method: 'POST'
+  });
+}
+
+export function cancelPurchaseOrder(token: string, purchaseOrderId: string) {
+  return request<void>(`/purchase-orders/${purchaseOrderId}/cancel`, token, {
+    method: 'POST'
+  });
+}
+
+export function findPurchaseOrder(token: string, purchaseOrderId: string) {
+  return request<PurchaseOrderSummary>(`/purchase-orders/${purchaseOrderId}`, token);
+}
+
+export function listAllPurchaseOrders(token: string) {
+  return request<PurchaseOrderSummary[]>('/purchase-orders', token);
 }

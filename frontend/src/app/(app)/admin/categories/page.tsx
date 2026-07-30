@@ -14,27 +14,19 @@ import {
 import { FormInput } from '@/components/ui/form-input';
 import { FormButton } from '@/components/ui/form-button';
 import { useSession } from '@/lib/session';
-import {
-  addCategory,
-  getAllCategories,
-  removeCategory,
-  FoodyApiError,
-  type Category
-} from '@/lib/api';
-import { Trash2 } from 'lucide-react';
+import { createCategory, listCategories, ApiError, type CategorySummary } from '@/lib/api';
 
 export default function AdminCategoriesPage() {
   const session = useSession();
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
-  const [removingName, setRemovingName] = useState<string | null>(null);
 
   function load() {
     if (!session) return;
     setLoading(true);
-    getAllCategories(session.key)
+    listCategories(session.accessToken)
       .then(setCategories)
       .catch(() => setCategories([]))
       .finally(() => setLoading(false));
@@ -47,38 +39,20 @@ export default function AdminCategoriesPage() {
     if (!session || !newName.trim()) return;
     setCreating(true);
     try {
-      await addCategory(session.key, newName.trim());
+      await createCategory(session.accessToken, newName.trim());
       setNewName('');
       toast.success('Category added');
       load();
     } catch (err) {
-      toast.error(
-        err instanceof FoodyApiError ? err.message : 'Could not add category'
-      );
+      toast.error(err instanceof ApiError ? err.message : 'Could not add category');
     } finally {
       setCreating(false);
     }
   }
 
-  async function handleRemove(categoryName: string) {
-    if (!session) return;
-    setRemovingName(categoryName);
-    try {
-      await removeCategory(session.key, categoryName);
-      toast.success('Category removed');
-      load();
-    } catch (err) {
-      toast.error(
-        err instanceof FoodyApiError ? err.message : 'Could not remove category'
-      );
-    } finally {
-      setRemovingName(null);
-    }
-  }
-
   return (
     <div>
-      <PageHeader title='Categories' description='Manage menu categories.' />
+      <PageHeader title='Categories' description='Manage the catalogue category tree.' />
 
       <form onSubmit={handleCreate} className='mb-6 flex items-end gap-2'>
         <FormInput
@@ -86,7 +60,7 @@ export default function AdminCategoriesPage() {
           label='New category'
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
-          placeholder='e.g. Beverages'
+          placeholder='e.g. Dry Goods'
         />
         <FormButton type='submit' fullWidth={false} loading={creating}>
           Add
@@ -101,27 +75,15 @@ export default function AdminCategoriesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>ID</TableHead>
               <TableHead>Name</TableHead>
-              <TableHead className='text-right'>Actions</TableHead>
+              <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {categories.map((c) => (
-              <TableRow key={c.categoryId}>
-                <TableCell>{c.categoryId}</TableCell>
-                <TableCell>{c.categoryName}</TableCell>
-                <TableCell className='text-right'>
-                  <FormButton
-                    variant='ghost'
-                    size='icon'
-                    fullWidth={false}
-                    loading={removingName === c.categoryName}
-                    onClick={() => handleRemove(c.categoryName)}
-                  >
-                    <Trash2 className='text-destructive size-4' />
-                  </FormButton>
-                </TableCell>
+              <TableRow key={c.id}>
+                <TableCell>{c.name}</TableCell>
+                <TableCell>{c.status}</TableCell>
               </TableRow>
             ))}
           </TableBody>

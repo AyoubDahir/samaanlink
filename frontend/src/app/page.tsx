@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession } from '@/lib/session';
+import { getSession, homeRouteFor } from '@/lib/session';
 
 export default function Page() {
   const router = useRouter();
@@ -12,7 +12,7 @@ export default function Page() {
     if (!session) {
       router.replace('/sign-in');
     } else {
-      router.replace(session.role === 'admin' ? '/admin/categories' : '/menu');
+      router.replace(homeRouteFor(session.role));
     }
   }, [router]);
 

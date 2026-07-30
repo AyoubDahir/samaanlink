@@ -17,5 +17,13 @@ public interface SupplierFacade {
 
 	SupplierSummary findSupplier(UUID supplierId);
 
+	/** Throws {@link SupplierException} unless the supplier exists and is ACTIVE - used by Procurement before placing a purchase order. */
+	void validateActiveSupplier(UUID supplierId);
+
+	List<SupplierSummary> listSuppliers();
+
 	List<SupplierSummary> listSuppliersForProduct(UUID productId);
+
+	/** Product IDs this supplier is linked to sell - what an admin may pick from when raising a purchase order. */
+	List<UUID> listProductIdsForSupplier(UUID supplierId);
 }

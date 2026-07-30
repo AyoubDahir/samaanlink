@@ -45,8 +45,10 @@ public class OrderController {
 	}
 
 	@GetMapping
-	public ResponseEntity<List<OrderSummary>> listByRestaurant(@RequestParam UUID restaurantId) {
-		return ResponseEntity.ok(orderFacade.listOrdersByRestaurant(restaurantId));
+	public ResponseEntity<List<OrderSummary>> list(@RequestParam(required = false) UUID restaurantId) {
+		List<OrderSummary> orders = restaurantId != null ? orderFacade.listOrdersByRestaurant(restaurantId)
+				: orderFacade.listAllOrders();
+		return ResponseEntity.ok(orders);
 	}
 
 	@PostMapping("/{id}/lines")

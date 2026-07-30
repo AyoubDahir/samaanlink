@@ -100,6 +100,29 @@ public class SupplierFacadeImpl implements SupplierFacade {
 				.toList();
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public void validateActiveSupplier(UUID supplierId) {
+		Supplier supplier = supplierRepository.findById(supplierId)
+				.orElseThrow(() -> new SupplierException("Supplier not found"));
+		if (!supplier.isActive()) {
+			throw new SupplierException("Supplier is not active");
+		}
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<SupplierSummary> listSuppliers() {
+		return supplierRepository.findAll().stream().map(this::toSummary).toList();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<UUID> listProductIdsForSupplier(UUID supplierId) {
+		return supplierProductRepository.findBySupplierId(supplierId).stream().map(SupplierProduct::getProductId)
+				.toList();
+	}
+
 	private SupplierSummary toSummary(Supplier supplier) {
 		return new SupplierSummary(supplier.getId(), supplier.getName(), supplier.getLeadTimeDays(),
 				supplier.getPaymentTermDays(), supplier.getStatus().name());

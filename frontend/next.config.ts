@@ -1,8 +1,8 @@
 import type { NextConfig } from 'next';
 
 /**
- * Server-side only: where Next.js forwards `/api/foody/*`.
- * Same host as `pnpm dev` in local dev; the FoodyExpress container's service name in Docker Compose.
+ * Server-side only: where Next.js forwards `/api/samaanlink/*` to the com.samaanlink backend.
+ * Same host as `pnpm dev` in local dev; the backend container's service name in Docker Compose.
  */
 const apiProxyTarget = (
   process.env.API_PROXY_TARGET || 'http://localhost:8088'
@@ -27,12 +27,6 @@ const baseConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/foody/:path*',
-        destination: `${apiProxyTarget}/:path*`
-      },
-      {
-        // com.samaanlink JWT-secured API (new modular backend), separate from the legacy
-        // session-key `/api/foody/*` bridge above.
         source: '/api/samaanlink/:path*',
         destination: `${apiProxyTarget}/api/v1/:path*`
       }

@@ -21,4 +21,6 @@ public interface OrderFacade {
 	OrderSummary findOrder(UUID orderId);
 
 	List<OrderSummary> listOrdersByRestaurant(UUID restaurantId);
+
+	List<OrderSummary> listAllOrders();
 }

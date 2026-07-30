@@ -26,5 +26,7 @@ public interface CatalogueFacade {
 
 	List<ProductSummary> listProductsByCategory(UUID categoryId);
 
+	List<ProductSummary> listProducts();
+
 	boolean productExists(UUID productId);
 }

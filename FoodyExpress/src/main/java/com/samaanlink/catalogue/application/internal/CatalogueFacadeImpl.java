@@ -111,6 +111,12 @@ public class CatalogueFacadeImpl implements CatalogueFacade {
 
 	@Override
 	@Transactional(readOnly = true)
+	public List<ProductSummary> listProducts() {
+		return productRepository.findAll().stream().map(this::toSummary).toList();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
 	public boolean productExists(UUID productId) {
 		return productRepository.existsById(productId);
 	}

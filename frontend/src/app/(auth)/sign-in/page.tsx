@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -13,12 +12,11 @@ import {
 } from '@/components/ui/card';
 import { FormInput } from '@/components/ui/form-input';
 import { FormButton } from '@/components/ui/form-button';
-import { login, FoodyApiError, type Role } from '@/lib/api';
-import { setSession } from '@/lib/session';
+import { login, ApiError } from '@/lib/api';
+import { setSession, homeRouteFor } from '@/lib/session';
 
 export default function SignInPage() {
   const router = useRouter();
-  const [role, setRole] = useState<Role>('customer');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,19 +25,17 @@ export default function SignInPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await login(email, password, role);
+      const res = await login(email, password);
       setSession({
-        key: res.key,
-        role: res.role,
-        email,
-        customerId: res.customerId ?? undefined
+        accessToken: res.accessToken,
+        refreshToken: res.refreshToken,
+        userId: res.userId,
+        role: res.roleName
       });
-      toast.success(res.message);
-      router.replace(res.role === 'admin' ? '/admin/categories' : '/menu');
+      toast.success('Signed in');
+      router.replace(homeRouteFor(res.roleName));
     } catch (err) {
-      toast.error(
-        err instanceof FoodyApiError ? err.message : 'Sign in failed'
-      );
+      toast.error(err instanceof ApiError ? err.message : 'Sign in failed');
     } finally {
       setLoading(false);
     }
@@ -51,28 +47,11 @@ export default function SignInPage() {
         <CardHeader>
           <CardTitle className='text-primary text-2xl'>SamaanLink</CardTitle>
           <CardDescription>
-            Sign in to order food or manage the catalog.
+            Sign in to manage the catalogue or place a restaurant order.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className='space-y-4'>
-            <div className='bg-muted grid grid-cols-2 gap-1 rounded-md p-1'>
-              {(['customer', 'admin'] as const).map((r) => (
-                <button
-                  type='button'
-                  key={r}
-                  onClick={() => setRole(r)}
-                  className={`rounded-sm py-1.5 text-sm font-medium capitalize transition-colors ${
-                    role === r
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground'
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-
             <FormInput
               id='email'
               label='Email'
@@ -80,9 +59,7 @@ export default function SignInPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder={
-                role === 'admin' ? 'admin@gmail.com' : 'you@example.com'
-              }
+              placeholder='you@example.com'
             />
             <FormInput
               id='password'
@@ -103,20 +80,11 @@ export default function SignInPage() {
             </FormButton>
           </form>
 
-          {role === 'customer' && (
-            <p className='text-muted-foreground mt-4 text-center text-sm'>
-              No account?{' '}
-              <Link href='/sign-up' className='text-primary font-medium'>
-                Sign up
-              </Link>
-            </p>
-          )}
-          {role === 'admin' && (
-            <p className='text-muted-foreground mt-4 text-center text-xs'>
-              The admin account is bootstrapped via the backend&apos;s{' '}
-              <code>POST /admin/new</code> endpoint.
-            </p>
-          )}
+          <p className='text-muted-foreground mt-4 text-center text-xs'>
+            Accounts are created by a platform admin (or automatically for a
+            registered restaurant&apos;s owner) — there is no self-service
+            sign-up.
+          </p>
         </CardContent>
       </Card>
     </div>

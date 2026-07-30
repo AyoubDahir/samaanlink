@@ -1,5 +1,6 @@
 package com.samaanlink.supplier.api;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -40,6 +41,16 @@ public class SupplierController {
 	@GetMapping("/{id}")
 	public ResponseEntity<SupplierSummary> findById(@PathVariable UUID id) {
 		return ResponseEntity.ok(supplierFacade.findSupplier(id));
+	}
+
+	@GetMapping
+	public ResponseEntity<List<SupplierSummary>> list() {
+		return ResponseEntity.ok(supplierFacade.listSuppliers());
+	}
+
+	@GetMapping("/{id}/products")
+	public ResponseEntity<List<UUID>> listProducts(@PathVariable UUID id) {
+		return ResponseEntity.ok(supplierFacade.listProductIdsForSupplier(id));
 	}
 
 	@PostMapping("/{id}/contacts")

@@ -34,7 +34,7 @@ services:
 
   frontend:
     build:
-      context: ../prime-frontend
+      context: ./frontend
       args:
         API_PROXY_TARGET: http://app:8088
     container_name: samaanlink-frontend
