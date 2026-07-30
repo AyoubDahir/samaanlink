@@ -21,7 +21,7 @@ export function isRestaurantRole(role: AppRole): boolean {
 
 /** Landing route for a freshly-authenticated session, based on role. */
 export function homeRouteFor(role: AppRole): string {
-  return isRestaurantRole(role) ? '/restaurant/orders' : '/admin/categories';
+  return isRestaurantRole(role) ? '/restaurant/catalogue' : '/admin/categories';
 }
 
 export function getSession(): Session | null {
