@@ -1,6 +1,8 @@
 package com.samaanlink.pricing.application;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -29,6 +31,9 @@ public interface PricingFacade {
 
 	/** Resolves the effective selling price for a product/restaurant pair: the restaurant-specific override if one exists, otherwise the standard selling price. */
 	BigDecimal effectiveSellingPrice(UUID productId, UUID restaurantId);
+
+	/** Bulk form of {@link #effectiveSellingPrice} for catalogue browsing - products with no price set are simply absent from the result rather than throwing. */
+	Map<UUID, BigDecimal> effectiveSellingPrices(List<UUID> productIds, UUID restaurantId);
 
 	/** Calculates and persists an immutable {@link PriceQuote} for a line; Orders re-fetches it by id rather than recomputing. */
 	PriceQuote quoteLine(QuoteLineCommand command);

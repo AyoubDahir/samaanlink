@@ -208,6 +208,18 @@ export function setPurchasePrice(
   });
 }
 
+/** Bulk unit-price lookup for catalogue browsing - does not persist a quote/snapshot. */
+export function effectivePrices(
+  token: string,
+  productIds: string[],
+  restaurantId: string
+) {
+  return request<Record<string, string>>('/pricing/effective-prices', token, {
+    method: 'POST',
+    body: JSON.stringify({ productIds, restaurantId })
+  });
+}
+
 export function setStandardSellingPrice(
   token: string,
   productId: string,

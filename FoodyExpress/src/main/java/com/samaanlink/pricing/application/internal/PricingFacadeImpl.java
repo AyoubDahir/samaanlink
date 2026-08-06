@@ -2,6 +2,9 @@ package com.samaanlink.pricing.application.internal;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -151,6 +154,17 @@ public class PricingFacadeImpl implements PricingFacade {
 				.orElseGet(() -> standardSellingPriceRepository.findById(productId)
 						.map(StandardSellingPrice::getPrice)
 						.orElseThrow(() -> new PricingException("No selling price set for product " + productId)));
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Map<UUID, BigDecimal> effectiveSellingPrices(List<UUID> productIds, UUID restaurantId) {
+		Map<UUID, BigDecimal> prices = new HashMap<>();
+		standardSellingPriceRepository.findAllById(productIds)
+				.forEach(p -> prices.put(p.getProductId(), p.getPrice()));
+		restaurantPriceRepository.findByProductIdInAndRestaurantId(productIds, restaurantId)
+				.forEach(p -> prices.put(p.getProductId(), p.getPrice()));
+		return prices;
 	}
 
 	@Override

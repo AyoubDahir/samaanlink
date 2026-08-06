@@ -1,6 +1,7 @@
 package com.samaanlink.pricing.api;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -104,5 +105,11 @@ public class PricingController {
 	@GetMapping("/quotes/{quoteId}")
 	public ResponseEntity<PriceQuote> findQuote(@PathVariable UUID quoteId) {
 		return ResponseEntity.ok(pricingFacade.findQuote(quoteId));
+	}
+
+	/** Lightweight bulk price lookup for catalogue browsing - unlike /quotes, does not persist anything. */
+	@PostMapping("/effective-prices")
+	public ResponseEntity<Map<UUID, BigDecimal>> effectivePrices(@Valid @RequestBody EffectivePricesRequest request) {
+		return ResponseEntity.ok(pricingFacade.effectiveSellingPrices(request.productIds(), request.restaurantId()));
 	}
 }

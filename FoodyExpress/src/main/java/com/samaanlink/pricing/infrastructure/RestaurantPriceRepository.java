@@ -1,5 +1,6 @@
 package com.samaanlink.pricing.infrastructure;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -10,4 +11,6 @@ import com.samaanlink.pricing.domain.RestaurantPrice;
 public interface RestaurantPriceRepository extends JpaRepository<RestaurantPrice, UUID> {
 
 	Optional<RestaurantPrice> findByProductIdAndRestaurantId(UUID productId, UUID restaurantId);
+
+	List<RestaurantPrice> findByProductIdInAndRestaurantId(List<UUID> productIds, UUID restaurantId);
 }

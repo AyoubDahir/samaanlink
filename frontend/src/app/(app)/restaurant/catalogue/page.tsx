@@ -6,6 +6,13 @@ import { toast } from 'sonner';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card } from '@/components/ui/card';
 import { FormButton } from '@/components/ui/form-button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog';
 import { useSession } from '@/lib/session';
 import { useCart } from '@/lib/cart';
 import {
@@ -17,31 +24,54 @@ import {
   createOrder,
   addOrderLine,
   placeOrder,
+  effectivePrices,
   ApiError,
   type CategorySummary,
   type ProductSummary
 } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { Minus, Plus, ShoppingCart, Package } from 'lucide-react';
+import { Minus, Plus, ShoppingCart, Package, Trash2 } from 'lucide-react';
 
 export default function RestaurantCataloguePage() {
   const session = useSession();
   const router = useRouter();
-  const { cart, itemCount, increment, decrement, clear } = useCart();
+  const { cart, itemCount, increment, decrement, setQuantity, clear } = useCart();
 
   const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [products, setProducts] = useState<ProductSummary[]>([]);
+  const [prices, setPrices] = useState<Record<string, string>>({});
+  const [restaurantId, setRestaurantId] = useState<string | null>(null);
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
 
   useEffect(() => {
     if (!session) return;
     setLoading(true);
-    Promise.all([listCategories(session.accessToken), listProducts(session.accessToken)])
-      .then(([cats, prods]) => {
+    Promise.all([
+      listCategories(session.accessToken),
+      listProducts(session.accessToken),
+      myRestaurant(session.accessToken)
+    ])
+      .then(async ([cats, prods, restaurant]) => {
+        const activeProducts = prods.filter((p) => p.status === 'ACTIVE');
         setCategories(cats);
-        setProducts(prods.filter((p) => p.status === 'ACTIVE'));
+        setProducts(activeProducts);
+        setRestaurantId(restaurant.id);
+        if (activeProducts.length > 0) {
+          try {
+            setPrices(
+              await effectivePrices(
+                session.accessToken,
+                activeProducts.map((p) => p.id),
+                restaurant.id
+              )
+            );
+          } catch {
+            setPrices({});
+          }
+        }
       })
       .catch(() => {
         setCategories([]);
@@ -54,15 +84,27 @@ export default function RestaurantCataloguePage() {
     ? products.filter((p) => p.categoryId === activeCategoryId)
     : products;
 
+  const cartLines = Object.entries(cart)
+    .map(([productId, quantity]) => ({
+      product: products.find((p) => p.id === productId),
+      quantity
+    }))
+    .filter((line): line is { product: ProductSummary; quantity: number } => !!line.product);
+
+  const cartTotal = cartLines.reduce((sum, line) => {
+    const price = prices[line.product.id];
+    return price ? sum + Number(price) * line.quantity : sum;
+  }, 0);
+  const allPriced = cartLines.every((line) => prices[line.product.id]);
+
   async function handleCheckout() {
-    if (!session) return;
+    if (!session || !restaurantId) return;
     const lines = Object.entries(cart);
     if (lines.length === 0) return;
 
     setCheckingOut(true);
     try {
-      const restaurant = await myRestaurant(session.accessToken);
-      const branches = await listBranches(session.accessToken, restaurant.id);
+      const branches = await listBranches(session.accessToken, restaurantId);
       const primaryBranch = branches.find((b) => b.primary) ?? branches[0];
       if (!primaryBranch) throw new ApiError('No branch found for your restaurant');
 
@@ -74,13 +116,14 @@ export default function RestaurantCataloguePage() {
         return;
       }
 
-      const order = await createOrder(session.accessToken, restaurant.id, address.id);
+      const order = await createOrder(session.accessToken, restaurantId, address.id);
       for (const [productId, quantity] of lines) {
         await addOrderLine(session.accessToken, order.id, productId, quantity);
       }
       await placeOrder(session.accessToken, order.id);
 
       clear();
+      setCartOpen(false);
       toast.success('Order placed');
       router.push(`/restaurant/orders/${order.id}`);
     } catch (err) {
@@ -132,6 +175,7 @@ export default function RestaurantCataloguePage() {
             <ProductCard
               key={p.id}
               product={p}
+              price={prices[p.id]}
               quantity={cart[p.id] ?? 0}
               onIncrement={() => increment(p.id)}
               onDecrement={() => decrement(p.id)}
@@ -143,27 +187,120 @@ export default function RestaurantCataloguePage() {
       {itemCount > 0 && (
         <div className='fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80'>
           <div className='mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3'>
-            <div className='flex items-center gap-2 text-sm font-medium'>
+            <button
+              onClick={() => setCartOpen(true)}
+              className='hover:bg-accent -mx-2 flex items-center gap-2 rounded-md px-2 py-1 text-sm font-medium transition-colors'
+            >
               <ShoppingCart className='size-5' />
               {itemCount} {itemCount === 1 ? 'item' : 'items'} in cart
-            </div>
+              {allPriced && cartTotal > 0 && (
+                <span className='text-muted-foreground'>· ${cartTotal.toFixed(2)}</span>
+              )}
+            </button>
             <FormButton fullWidth={false} loading={checkingOut} onClick={handleCheckout}>
               Place order
             </FormButton>
           </div>
         </div>
       )}
+
+      <Dialog open={cartOpen} onOpenChange={setCartOpen}>
+        <DialogContent className='max-h-[85vh] overflow-y-auto'>
+          <DialogHeader>
+            <DialogTitle>Your order</DialogTitle>
+          </DialogHeader>
+
+          {cartLines.length === 0 ? (
+            <p className='text-muted-foreground text-sm'>Your cart is empty.</p>
+          ) : (
+            <div className='space-y-3'>
+              {cartLines.map(({ product, quantity }) => {
+                const price = prices[product.id];
+                return (
+                  <div key={product.id} className='flex items-center gap-3 border-b pb-3 last:border-b-0'>
+                    <div className='bg-muted flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md'>
+                      {product.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={product.imageUrl} alt='' className='size-full object-cover' />
+                      ) : (
+                        <Package className='text-muted-foreground/40 size-5' />
+                      )}
+                    </div>
+                    <div className='min-w-0 flex-1'>
+                      <p className='truncate text-sm font-medium'>{product.name}</p>
+                      <p className='text-muted-foreground text-xs'>
+                        {price ? `$${price} / ${product.sellingUnitCode}` : product.sellingUnitCode}
+                      </p>
+                    </div>
+                    <div className='bg-muted flex items-center gap-1 rounded-full px-1 py-1'>
+                      <button
+                        onClick={() => decrement(product.id)}
+                        className='flex size-6 items-center justify-center rounded-full transition-transform active:scale-90'
+                        aria-label='Decrease quantity'
+                      >
+                        <Minus className='size-3.5' />
+                      </button>
+                      <span className='w-5 text-center text-sm font-semibold tabular-nums'>{quantity}</span>
+                      <button
+                        onClick={() => increment(product.id)}
+                        className='flex size-6 items-center justify-center rounded-full transition-transform active:scale-90'
+                        aria-label='Increase quantity'
+                      >
+                        <Plus className='size-3.5' />
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setQuantity(product.id, 0)}
+                      className='text-muted-foreground hover:text-destructive shrink-0'
+                      aria-label='Remove from cart'
+                    >
+                      <Trash2 className='size-4' />
+                    </button>
+                  </div>
+                );
+              })}
+
+              {allPriced && cartTotal > 0 && (
+                <div className='flex items-center justify-between pt-1 text-sm font-semibold'>
+                  <span>Subtotal</span>
+                  <span>${cartTotal.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <FormButton
+              variant='outline'
+              fullWidth={false}
+              onClick={() => setCartOpen(false)}
+            >
+              Continue shopping
+            </FormButton>
+            <FormButton
+              fullWidth={false}
+              loading={checkingOut}
+              disabled={cartLines.length === 0}
+              onClick={handleCheckout}
+            >
+              Place order
+            </FormButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 function ProductCard({
   product,
+  price,
   quantity,
   onIncrement,
   onDecrement
 }: {
   product: ProductSummary;
+  price: string | undefined;
   quantity: number;
   onIncrement: () => void;
   onDecrement: () => void;
@@ -184,10 +321,13 @@ function ProductCard({
         )}
       </div>
       <div className='flex flex-1 flex-col gap-2 px-3 pb-3'>
-        <div className='min-h-10'>
+        <div className='min-h-14'>
           <p className='line-clamp-2 text-sm leading-tight font-medium'>{product.name}</p>
           <p className='text-muted-foreground mt-0.5 text-xs'>
             {product.sku} · {product.sellingUnitCode}
+          </p>
+          <p className='mt-0.5 text-sm font-semibold'>
+            {price ? `$${price} / ${product.sellingUnitCode}` : ' '}
           </p>
         </div>
 
